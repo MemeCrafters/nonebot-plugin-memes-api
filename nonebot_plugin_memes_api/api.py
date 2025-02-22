@@ -291,16 +291,19 @@ async def generate_meme(
     texts: list[str],
     options: dict[str, Union[bool, str, int, float]],
 ) -> bytes:
-    image_ids: list[dict[str, str]] = []
-    image_data: dict[str, str] = {}
+    image_dicts: list[dict[str, str]] = []
+    image_data: dict[str, dict[str, str]] = {}
 
     for image in images:
         image_id = md5(image.data).hexdigest()
-        image_data[image_id] = base64.b64encode(image.data).decode()
-        image_ids.append({"name": image.name, "id": image_id})
+        image_data[image_id] = {
+            "type": "data",
+            "data": base64.b64encode(image.data).decode(),
+        }
+        image_dicts.append({"name": image.name, "id": image_id})
 
     payload = {
-        "images": image_ids,
+        "images": image_dicts,
         "image_data": image_data,
         "texts": texts,
         "options": options,
