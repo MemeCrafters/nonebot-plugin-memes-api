@@ -5,6 +5,7 @@ from itertools import chain
 from typing import Any, Optional, Union
 
 from arclet.alconna import config as alc_config
+from httpx import HTTPStatusError
 from nonebot import get_driver
 from nonebot.adapters import Bot, Event
 from nonebot.exception import AdapterException
@@ -49,6 +50,7 @@ from ..exception import (
     ImageEncodeError,
     ImageNumberMismatch,
     MemeFeedback,
+    MemeGeneratorException,
     TextNumberMismatch,
     TextOverLength,
 )
@@ -84,7 +86,7 @@ async def process(
         await matcher.finish("当前平台可能不支持下载图片")
     except (NetworkError, AdapterException):
         logger.warning(traceback.format_exc())
-        await matcher.finish("图片下载出错，请稍后再试")
+        await matcher.finish("图片下载出错")
 
     try:
         result = await meme.generate(meme_images, texts, options)
@@ -108,6 +110,11 @@ async def process(
         await matcher.finish(f"文字过长：{repr}")
     except MemeFeedback as e:
         await matcher.finish(e.feedback)
+    except MemeGeneratorException as e:
+        await matcher.finish(e.message)
+    except HTTPStatusError:
+        logger.warning(traceback.format_exc())
+        await matcher.finish("请求出错")
 
     await record_meme_generation(session, meme.key)
 

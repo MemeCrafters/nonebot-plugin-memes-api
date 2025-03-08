@@ -17,7 +17,7 @@ from nonebot_plugin_alconna import (
 )
 from nonebot_plugin_uninfo import Uninfo
 
-from ..api import render_meme_statistics
+from ..api.tools import render_meme_statistics
 from ..exception import MemeGeneratorException
 from ..manager import meme_manager
 from ..recorder import (

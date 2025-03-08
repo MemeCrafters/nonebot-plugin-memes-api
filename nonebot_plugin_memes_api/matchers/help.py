@@ -4,7 +4,7 @@ from nonebot.log import logger
 from nonebot_plugin_alconna import Image, Text, on_alconna
 from nonebot_plugin_uninfo import Uninfo
 
-from ..api import MemeProperties, render_meme_list
+from ..api.tools import MemeProperties, render_meme_list
 from ..config import memes_config
 from ..exception import MemeGeneratorException
 from ..manager import meme_manager

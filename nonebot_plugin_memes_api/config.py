@@ -24,6 +24,12 @@ class MemeParamsMismatchPolicy(BaseModel):
     too_few_image: Literal["ignore", "prompt", "get"] = "ignore"
 
 
+class MultipleImageConfig(BaseModel):
+    direct_send_threshold: int = 10
+    send_zip_file: bool = True
+    send_forward_msg: bool = False
+
+
 class Config(BaseModel):
     meme_generator_base_url: str = "http://127.0.0.1:2233"
     memes_command_prefixes: Optional[list[str]] = None
@@ -34,6 +40,7 @@ class Config(BaseModel):
     memes_use_default_when_no_text: bool = False
     memes_random_meme_show_info: bool = True
     memes_list_image_config: MemeListImageConfig = MemeListImageConfig()
+    memes_multiple_image_config: MultipleImageConfig = MultipleImageConfig()
 
 
 memes_config = get_plugin_config(Config)
