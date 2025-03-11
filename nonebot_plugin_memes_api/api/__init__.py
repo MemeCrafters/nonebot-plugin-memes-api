@@ -2,7 +2,6 @@ import base64
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
-from hashlib import md5
 from typing import Any, Literal, Optional, Union, cast, overload
 
 import httpx
@@ -16,8 +15,10 @@ from ..exception import (
     ImageDecodeError,
     ImageEncodeError,
     ImageNumberMismatch,
+    IOError,
     MemeFeedback,
     MemeGeneratorException,
+    RequestError,
     TextNumberMismatch,
     TextOverLength,
 )
@@ -73,42 +74,68 @@ async def send_request(
 
         elif status_code == 500:
             result = resp.json()
-            code = result["code"]
-            message = result["message"]
-            data = result["data"]
-            if code == 510:
+            code: int = result["code"]
+            message: str = result["message"]
+            data: dict = result["data"]
+            if code == 410:
                 error = data["error"]
-                raise ImageDecodeError(error)
+                raise RequestError(message, error)
+            elif code == 420:
+                error = data["error"]
+                raise IOError(message, error)
+            elif code == 510:
+                error = data["error"]
+                raise ImageDecodeError(message, error)
             elif code == 520:
                 error = data["error"]
-                raise ImageEncodeError(error)
+                raise ImageEncodeError(message, error)
             elif code == 530:
                 path = data["path"]
-                raise ImageAssetMissing(path)
+                raise ImageAssetMissing(message, path)
             elif code == 540:
                 error = data["error"]
-                raise DeserializeError(error)
+                raise DeserializeError(message, error)
             elif code == 550:
                 min = data["min"]
                 max = data["max"]
                 actual = data["actual"]
-                raise ImageNumberMismatch(min, max, actual)
+                raise ImageNumberMismatch(message, min, max, actual)
             elif code == 551:
                 min = data["min"]
                 max = data["max"]
                 actual = data["actual"]
-                raise TextNumberMismatch(min, max, actual)
+                raise TextNumberMismatch(message, min, max, actual)
             elif code == 560:
                 text = data["text"]
-                raise TextOverLength(text)
+                raise TextOverLength(message, text)
             elif code == 570:
                 feedback = data["feedback"]
-                raise MemeFeedback(feedback)
+                raise MemeFeedback(message, feedback)
             else:
                 raise MemeGeneratorException(message)
 
         else:
             resp.raise_for_status()
+
+
+class ImageResponse(BaseModel):
+    image_id: str
+
+
+class ImagesResponse(BaseModel):
+    image_ids: list[str]
+
+
+async def upload_image(image: bytes) -> str:
+    payload = {"type": "data", "data": base64.b64encode(image).decode()}
+
+    return type_validate_python(
+        ImageResponse, await send_request("/image/upload", "POST", "JSON", json=payload)
+    ).image_id
+
+
+async def get_image(image_id: str) -> bytes:
+    return await send_request(f"/image/{image_id}", "GET", "BYTES")
 
 
 async def get_version() -> str:
@@ -212,7 +239,10 @@ async def get_meme_infos() -> list[MemeInfo]:
 
 
 async def generate_meme_preview(meme_key: str) -> bytes:
-    return await send_request(f"/memes/{meme_key}/preview", "GET", "BYTES")
+    image_id = type_validate_python(
+        ImageResponse, await send_request(f"/memes/{meme_key}/preview", "GET", "JSON")
+    ).image_id
+    return await get_image(image_id)
 
 
 @dataclass
@@ -228,24 +258,17 @@ async def generate_meme(
     options: dict[str, Union[bool, str, int, float]],
 ) -> bytes:
     image_dicts: list[dict[str, str]] = []
-    image_data: dict[str, dict[str, str]] = {}
 
     for image in images:
-        image_id = md5(image.data).hexdigest()
-        image_data[image_id] = {
-            "type": "data",
-            "data": base64.b64encode(image.data).decode(),
-        }
+        image_id = await upload_image(image.data)
         image_dicts.append({"name": image.name, "id": image_id})
 
-    payload = {
-        "images": image_dicts,
-        "image_data": image_data,
-        "texts": texts,
-        "options": options,
-    }
-
-    return await send_request(f"/memes/{meme_key}", "POST", "BYTES", json=payload)
+    payload = {"images": image_dicts, "texts": texts, "options": options}
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(f"/memes/{meme_key}", "POST", "JSON", json=payload),
+    ).image_id
+    return await get_image(image_id)
 
 
 @dataclass

@@ -20,7 +20,14 @@ from nonebot_plugin_alconna import (
 from nonebot_plugin_alconna.builtins.extensions.reply import ReplyMergeExtension
 from nonebot_plugin_alconna.uniseg.tools import image_fetch
 
-from ..api import ImageDecodeError, ImageEncodeError, image_operations
+from ..api import (
+    ImageDecodeError,
+    ImageEncodeError,
+    IOError,
+    MemeGeneratorException,
+    RequestError,
+    image_operations,
+)
 from .utils import send_multiple_images
 
 
@@ -233,7 +240,18 @@ def create_matcher(command: Command):
         if images := args.get("imgs"):
             args["imgs"] = [await fetch_image(image) for image in images]
 
-        result = await command.func(**args)
+        try:
+            result = await command.func(**args)
+        except ImageDecodeError as e:
+            await matcher.finish(f"图片解码出错：{e.error}")
+        except ImageEncodeError as e:
+            await matcher.finish(f"图片编码出错：{e.error}")
+        except (RequestError, IOError):
+            logger.warning(traceback.format_exc())
+            await matcher.finish("请求出错")
+        except MemeGeneratorException as e:
+            logger.warning(traceback.format_exc())
+            await matcher.finish(e.message)
 
         if isinstance(result, str):
             await matcher.finish(result)
@@ -241,10 +259,6 @@ def create_matcher(command: Command):
             await UniMessage.image(raw=result).send()
         elif isinstance(result, list):
             await send_multiple_images(bot, event, result)
-        elif isinstance(result, ImageDecodeError):
-            await matcher.finish(f"图片解码出错：{result.error}")
-        elif isinstance(result, ImageEncodeError):
-            await matcher.finish(f"图片编码出错：{result.error}")
 
 
 def create_matchers():

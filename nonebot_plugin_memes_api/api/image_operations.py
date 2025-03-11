@@ -1,17 +1,9 @@
-import base64
 from typing import Optional
 
 from nonebot.compat import type_validate_python
 from pydantic import BaseModel
 
-from . import send_request
-
-
-def image_data(data: bytes) -> dict:
-    return {
-        "type": "data",
-        "data": base64.b64encode(data).decode(),
-    }
+from . import ImageResponse, ImagesResponse, get_image, send_request, upload_image
 
 
 class ImageInfo(BaseModel):
@@ -23,46 +15,67 @@ class ImageInfo(BaseModel):
 
 
 async def inspect(image: bytes) -> ImageInfo:
-    payload = {"image": image_data(image)}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id}
 
     return type_validate_python(
         ImageInfo,
         await send_request(
-            "/meme/tools/image_operations/inspect", "POST", "JSON", json=payload
+            "/tools/image_operations/inspect", "POST", "JSON", json=payload
         ),
     )
 
 
 async def flip_horizontal(image: bytes) -> bytes:
-    payload = {"image": image_data(image)}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id}
 
-    return await send_request(
-        "/meme/tools/image_operations/flip_horizontal", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/flip_horizontal", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def flip_vertical(image: bytes) -> bytes:
-    payload = {"image": image_data(image)}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id}
 
-    return await send_request(
-        "/meme/tools/image_operations/flip_vertical", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/flip_vertical", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def rotate(image: bytes, degrees: Optional[float]) -> bytes:
-    payload = {"image": image_data(image), "degrees": degrees}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id, "degrees": degrees}
 
-    return await send_request(
-        "/meme/tools/image_operations/rotate", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/rotate", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def resize(image: bytes, width: Optional[int], height: Optional[int]) -> bytes:
-    payload = {"image": image_data(image), "width": width, "height": height}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id, "width": width, "height": height}
 
-    return await send_request(
-        "/meme/tools/image_operations/resize", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/resize", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def crop(
@@ -72,86 +85,125 @@ async def crop(
     right: Optional[int],
     bottom: Optional[int],
 ) -> bytes:
+    image_id = await upload_image(image)
     payload = {
-        "image": image_data(image),
+        "image_id": image_id,
         "left": left,
         "top": top,
         "right": right,
         "bottom": bottom,
     }
 
-    return await send_request(
-        "/meme/tools/image_operations/crop", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/crop", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def grayscale(image: bytes) -> bytes:
-    payload = {"image": image_data(image)}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id}
 
-    return await send_request(
-        "/meme/tools/image_operations/grayscale", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/grayscale", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def invert(image: bytes) -> bytes:
-    payload = {"image": image_data(image)}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id}
 
-    return await send_request(
-        "/meme/tools/image_operations/invert", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/invert", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def merge_horizontal(images: list[bytes]) -> bytes:
-    payload = {"images": [image_data(image) for image in images]}
+    payload = {"image_ids": [await upload_image(image) for image in images]}
 
-    return await send_request(
-        "/meme/tools/image_operations/merge_horizontal", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/merge_horizontal", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def merge_vertical(images: list[bytes]) -> bytes:
-    payload = {"images": [image_data(image) for image in images]}
-    return await send_request(
-        "/meme/tools/image_operations/merge_vertical", "POST", "BYTES", json=payload
-    )
+    payload = {"image_ids": [await upload_image(image) for image in images]}
+
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/merge_vertical", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def gif_split(image: bytes) -> list[bytes]:
-    payload = {"image": image_data(image)}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id}
 
     return [
-        base64.b64decode(data)
-        for data in await send_request(
-            "/meme/tools/image_operations/gif_split", "POST", "JSON", json=payload
-        )
+        await get_image(image_id)
+        for image_id in type_validate_python(
+            ImagesResponse,
+            await send_request(
+                "/tools/image_operations/gif_split", "POST", "JSON", json=payload
+            ),
+        ).image_ids
     ]
 
 
 async def gif_merge(images: list[bytes], duration: Optional[float]) -> bytes:
     payload = {
-        "images": [image_data(image) for image in images],
+        "image_ids": [await upload_image(image) for image in images],
         "duration": duration,
     }
 
-    return await send_request(
-        "/meme/tools/image_operations/gif_merge", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/gif_merge", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def gif_reverse(image: bytes) -> bytes:
-    payload = {"image": image_data(image)}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id}
 
-    return await send_request(
-        "/meme/tools/image_operations/gif_reverse", "POST", "BYTES", json=payload
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/gif_reverse", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)
 
 
 async def gif_change_duration(image: bytes, duration: float) -> bytes:
-    payload = {"image": image_data(image), "duration": duration}
+    image_id = await upload_image(image)
+    payload = {"image_id": image_id, "duration": duration}
 
-    return await send_request(
-        "/meme/tools/image_operations/gif_change_duration",
-        "POST",
-        "BYTES",
-        json=payload,
-    )
+    image_id = type_validate_python(
+        ImageResponse,
+        await send_request(
+            "/tools/image_operations/gif_change_duration", "POST", "JSON", json=payload
+        ),
+    ).image_id
+    return await get_image(image_id)

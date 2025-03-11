@@ -1,3 +1,6 @@
+from typing import Optional
+
+
 class NetworkError(Exception):
     pass
 
@@ -7,6 +10,16 @@ class MemeGeneratorException(Exception):
 
     def __str__(self):
         return self.message
+
+
+class RequestError(MemeGeneratorException):
+    error: str
+    status: Optional[int]
+    url: Optional[str]
+
+
+class IOError(MemeGeneratorException):
+    error: str
 
 
 class ImageDecodeError(MemeGeneratorException):
