@@ -9,7 +9,7 @@
 _✨ [Nonebot2](https://github.com/nonebot/nonebot2) 表情包制作插件 调用 api 版本 ✨_
 
 <p align="center">
-  <img src="https://img.shields.io/github/license/noneplugin/nonebot-plugin-memes-api" alt="license">
+  <img src="https://img.shields.io/github/license/MemeCrafters/nonebot-plugin-memes-api" alt="license">
   <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/nonebot-2.3.0+-red.svg" alt="NoneBot">
   <a href="https://pypi.org/project/nonebot-plugin-memes-api">
@@ -22,7 +22,7 @@ _✨ [Nonebot2](https://github.com/nonebot/nonebot2) 表情包制作插件 调�
 
 </div>
 
-> 本插件为 [nonebot-plugin-memes](https://github.com/noneplugin/nonebot-plugin-memes) 调用 api 版本
+> 本插件为 [nonebot-plugin-memes](https://github.com/MemeCrafters/nonebot-plugin-memes) 调用 api 版本
 >
 > 可以将本插件与 [meme-generator](https://github.com/MemeCrafters/meme-generator-rs) 分开部署
 
@@ -203,4 +203,4 @@ memes_multiple_image_config='
 
 ### 使用
 
-使用方式与 [nonebot-plugin-memes](https://github.com/noneplugin/nonebot-plugin-memes) 基本一致
+使用方式与 [nonebot-plugin-memes](https://github.com/MemeCrafters/nonebot-plugin-memes) 基本一致
