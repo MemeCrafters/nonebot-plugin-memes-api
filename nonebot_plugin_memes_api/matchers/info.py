@@ -1,9 +1,8 @@
-from typing import Union
-
+from arclet.alconna import TextFormatter
 from nonebot.matcher import Matcher
-from nonebot_plugin_alconna import Alconna, Args, Image, UniMessage, on_alconna
+from nonebot_plugin_alconna import Alconna, Args, Image, Text, on_alconna
 
-from ..api import BooleanOption, FloatOption, IntegerOption, StringOption
+from ..request import generate_meme_preview
 from .utils import find_meme
 
 info_matcher = on_alconna(
@@ -18,61 +17,37 @@ info_matcher = on_alconna(
 @info_matcher.handle()
 async def _(matcher: Matcher, meme_name: str):
     meme = await find_meme(matcher, meme_name)
-    info = meme.info
-    params = info.params
-    keywords = "、".join([f'"{keyword}"' for keyword in info.keywords])
+
+    keywords = "、".join([f'"{keyword}"' for keyword in meme.keywords])
     shortcuts = "、".join(
-        [f'"{shortcut.humanized or shortcut.pattern}"' for shortcut in info.shortcuts]
+        [f'"{shortcut.humanized or shortcut.key}"' for shortcut in meme.shortcuts]
     )
-    tags = "、".join([f'"{tag}"' for tag in info.tags])
+    tags = "、".join([f'"{tag}"' for tag in meme.tags])
 
-    image_num = f"{params.min_images}"
-    if params.max_images > params.min_images:
-        image_num += f" ~ {params.max_images}"
+    image_num = f"{meme.params_type.min_images}"
+    if meme.params_type.max_images > meme.params_type.min_images:
+        image_num += f" ~ {meme.params_type.max_images}"
 
-    text_num = f"{params.min_texts}"
-    if params.max_texts > params.min_texts:
-        text_num += f" ~ {params.max_texts}"
+    text_num = f"{meme.params_type.min_texts}"
+    if meme.params_type.max_texts > meme.params_type.min_texts:
+        text_num += f" ~ {meme.params_type.max_texts}"
 
-    default_texts = ", ".join([f'"{text}"' for text in params.default_texts])
+    default_texts = ", ".join([f'"{text}"' for text in meme.params_type.default_texts])
 
-    def option_info(
-        option: Union[BooleanOption, StringOption, IntegerOption, FloatOption],
-    ) -> str:
-        parser_flags = option.parser_flags
-        short_aliases = parser_flags.short_aliases
-        if parser_flags.short:
-            short_aliases.insert(0, option.name[0])
-        long_aliases = parser_flags.long_aliases
-        if parser_flags.long:
-            long_aliases.insert(0, option.name)
-        text = f"{'/'.join([f'-{flag}' for flag in short_aliases])}"
-        if text:
-            text += "/"
-        text += f"{'/'.join([f'--{flag}' for flag in long_aliases])}"
-
-        if not isinstance(option, BooleanOption):
-            text += f" <{option.name.upper()}>"
-
-        text += f"  {option.description}"
-        addition_texts = []
-        if isinstance(option, (IntegerOption, FloatOption)):
-            if option.minimum is not None:
-                addition_texts.append(f"最小值：{option.minimum}")
-            if option.maximum is not None:
-                addition_texts.append(f"最大值：{option.maximum}")
-        if isinstance(option, StringOption):
-            if option.choices:
-                choices = "、".join([f'"{c}"' for c in option.choices])
-                addition_texts.append(f"可选值：{choices}")
-        if option.default is not None:
-            addition_texts.append(f"默认值：{option.default}")
-        addition_text = "，".join(addition_texts)
-        if addition_text:
-            text += f"（{addition_text}）"
-        return text
-
-    options_info = "\n".join(["  " + option_info(option) for option in params.options])
+    args_info = ""
+    if args_type := meme.params_type.args_type:
+        formater = TextFormatter()
+        for option in args_type.parser_options:
+            opt = option.option()
+            alias_text = (
+                " ".join(opt.requires)
+                + (" " if opt.requires else "")
+                + "│".join(sorted(opt.aliases, key=len))
+            )
+            args_info += (
+                f"\n  * {alias_text}{opt.separators[0]}"
+                f"{formater.parameters(opt.args)} {opt.help_text}"
+            )
 
     info = (
         f"表情名：{meme.key}"
@@ -82,12 +57,8 @@ async def _(matcher: Matcher, meme_name: str):
         + f"\n需要图片数目：{image_num}"
         + f"\n需要文字数目：{text_num}"
         + (f"\n默认文字：[{default_texts}]" if default_texts else "")
-        + (f"\n其他选项：\n{options_info}" if options_info else "")
+        + (f"\n可选参数：{args_info}" if args_info else "")
     )
-    msg = UniMessage.text(info)
-
-    img = await meme.generate_preview()
-    if isinstance(img, bytes):
-        msg += "\n表情预览：\n"
-        msg += Image(raw=img)
-    await msg.finish()
+    info += "\n表情预览：\n"
+    img = await generate_meme_preview(meme.key)
+    await (Text(info) + Image(raw=img)).finish()
