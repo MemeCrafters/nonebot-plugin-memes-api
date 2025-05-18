@@ -21,7 +21,7 @@ from nonebot_plugin_alconna import (
     MultiVar,
     Text,
     UniMessage,
-    UniMsg, # ？为啥多此一举
+    UniMsg,  # ？为啥多此一举
     on_alconna,
 )
 from nonebot_plugin_alconna.builtins.extensions.reply import ReplyMergeExtension
@@ -283,7 +283,7 @@ def create_matcher(meme: MemeInfo):
         #             else ""
         #         )
         #     )
-        
+
         @waiter(waits=["message"], keep_session=True)
         async def get_texts(uni_msg: UniMsg):
             uni_texts = [seg for seg in uni_msg if isinstance(seg, Text)]
@@ -298,12 +298,14 @@ def create_matcher(meme: MemeInfo):
                 list(msg) for msg in uni_msg.include(Image, At, Text).split()
             )
             params: list[T_MemeParams] = list(uni_segs)
-            _, new_images, new_names = await handle_params(matcher, session, interface, params)
+            _, new_images, new_names = await handle_params(
+                matcher, session, interface, params
+            )
             for i in range(len(new_names)):
                 if i < len(new_images):
                     new_images[i].name = new_names[i]
             return new_images
-        
+
         policy = memes_config.memes_params_mismatch_policy
 
         text_range = (
@@ -316,7 +318,7 @@ def create_matcher(meme: MemeInfo):
             if meme.params_type.min_images != meme.params_type.max_images
             else str(meme.params_type.min_images)
         )
-        
+
         if len(texts) < meme.params_type.min_texts:
             msg = f"文字数量不符，应为 {text_range}，实际传入 {len(texts)}"
             if policy.too_few_text == "ignore":
@@ -386,7 +388,7 @@ def create_matcher(meme: MemeInfo):
 
             elif policy.too_much_image == "drop":
                 images = images[: meme.params_type.max_images]
-                
+
         matcher.stop_propagation()
         await process(
             bot, event, state, matcher, session, meme, images, texts, users, args
