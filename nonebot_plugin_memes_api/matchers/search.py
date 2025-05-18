@@ -16,7 +16,9 @@ search_matcher = on_alconna(
 
 @search_matcher.handle()
 async def _(matcher: Matcher, meme_name: str):
-    searched_memes = await meme_manager.search(meme_name, include_tags=True)
+    searched_memes = meme_manager.search(
+        meme_name, include_tags=True, score_cutoff=70.0
+    )
     if not searched_memes:
         await matcher.finish("没有找到相关表情！")
 
@@ -28,8 +30,8 @@ async def _(matcher: Matcher, meme_name: str):
         start = page_num * num_per_page
         end = min(start + num_per_page, len(searched_memes))
         msg = "\n".join(
-            f"{start + i + 1}. {meme.key} ({'/'.join(meme.info.keywords)})"
-            + (f"\n    tags: {'、'.join(meme.info.tags)}" if meme.info.tags else "")
+            f"{start + i + 1}. {meme.key} ({'/'.join(meme.keywords)})"
+            + (f"\n    tags: {'、'.join(meme.tags)}" if meme.tags else "")
             for i, meme in enumerate(searched_memes[start:end])
         )
         if add_footer:

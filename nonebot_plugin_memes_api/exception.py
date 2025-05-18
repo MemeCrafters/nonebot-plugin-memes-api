@@ -1,58 +1,62 @@
-from typing import Optional
-
-
 class NetworkError(Exception):
     pass
 
 
-class MemeGeneratorException(Exception):
-    message: str
+class PlatformUnsupportError(Exception):
+    def __init__(self, platform: str):
+        self.platform = platform
 
-    def __str__(self):
+
+class MemeGeneratorException(Exception):
+    def __init__(self, message: str):
+        self.message = message
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __repr__(self) -> str:
         return self.message
 
 
-class RequestError(MemeGeneratorException):
-    error: str
-    status: Optional[int]
-    url: Optional[str]
-
-
-class IOError(MemeGeneratorException):
-    error: str
-
-
-class ImageDecodeError(MemeGeneratorException):
-    error: str
-
-
-class ImageEncodeError(MemeGeneratorException):
-    error: str
-
-
-class ImageAssetMissing(MemeGeneratorException):
-    path: str
-
-
-class DeserializeError(MemeGeneratorException):
-    error: str
-
-
-class ImageNumberMismatch(MemeGeneratorException):
-    min: int
-    max: int
-    actual: int
-
-
-class TextNumberMismatch(MemeGeneratorException):
-    min: int
-    max: int
-    actual: int
+class NoSuchMeme(MemeGeneratorException):
+    pass
 
 
 class TextOverLength(MemeGeneratorException):
-    text: str
+    pass
+
+
+class OpenImageFailed(MemeGeneratorException):
+    pass
+
+
+class ParamsMismatch(MemeGeneratorException):
+    pass
+
+
+class ImageNumberMismatch(ParamsMismatch):
+    pass
+
+
+class TextNumberMismatch(ParamsMismatch):
+    pass
+
+
+class TextOrNameNotEnough(ParamsMismatch):
+    pass
+
+
+class ArgMismatch(ParamsMismatch):
+    pass
+
+
+class ArgParserMismatch(ArgMismatch):
+    pass
+
+
+class ArgModelMismatch(ArgMismatch):
+    pass
 
 
 class MemeFeedback(MemeGeneratorException):
-    feedback: str
+    pass
